@@ -40,16 +40,16 @@ const app = crayon.create()
 
 app.use(react.router())
 
-app.path('/', (req, res) => {
-    return res.mount(() => <h1>Hello World</h1>)
+app.path('/', ctx => {
+    return c.mount(() => <h1>Hello World</h1>)
 })
 
-app.path('/users/:id', (req, res) => {
-    return res.mount(() => <div>Hi { req.params.id }!</div>)
+app.path('/users/:id', ctx => {
+    return ctx.mount(() => <div>Hi { ctx.params.id }!</div>)
 })
 
-app.path('/**', (req, res) => {
-    return res.mount(() => <div>Not Found!</div>)
+app.path('/**', ctx => {
+    return ctx.mount(() => <div>Not Found!</div>)
 })
 
 app.load()
@@ -155,12 +155,12 @@ const items = crayon.group('/items')
 items.use(your.middleware())
 
 // This will be "/items"
-items.path('/', (req, res) =>
+items.path('/', ctx =>
     res.mount(views.ItemsView)
 )
 
 // This will be "/items/add"
-items.path('/add', (req, res) =>
+items.path('/add', ctx =>
     res.mount(views.ItemsAddView)
 )
 
@@ -174,11 +174,11 @@ It also supplies an optional callback with the group object. This allows you to 
 const items = crayon.group('/items', group => {
     group.use(your.middleware())
 
-    group.path('/', (req, res) =>
+    group.path('/', ctx =>
         res.mount(views.ItemsView)
     )
 
-    group.path('/add', (req, res) =>
+    group.path('/add', ctx =>
         res.mount(views.ItemsAddView)
     )
 })
@@ -200,20 +200,31 @@ In future, I intend to create a middleware that impliments rxjs, allowing you to
 the stream into their operators/utilities (like .map() and .filter())
 
 ```jsx
-app.path('/users/:id', (req, res) => {
-    let id = req.params.id
+app.path('/users/:id', ctx => {
+    let id = ctx.params.id
 
     // subscribe to the event steam and pull out the
-    // "ProgressEnd" event
+    // "ProgressEnd" event of the current router
     const sub = app.events.subscribe(event => {
-       if (event.type === RouterEventType.ProgressEnd) {
-           id = req.params.id
+       if (
+           event.type === RouterEventType.ProgressEnd &&
+           event.router === app
+       ) {
+           console.log('Route loading complete')
        }
     })
+    
+    // Alternatively
+    ctx.on(
+        RouterEventType.ProgressEnd, 
+        () => console.log('Route loading complete')
+    )
 
     // A callback the router fires when you
     // navigate away from this page
-    res.onLeave(() => sub.unsubscribe())
+    ctx.on(
+        
+        'leave', () => sub.unsubscribe())
 })
 ```
 
